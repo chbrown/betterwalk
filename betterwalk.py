@@ -306,3 +306,40 @@ def walk(top, topdown=True, onerror=None, followlinks=False):
     # Yield before recursion if going bottom up
     if not topdown:
         yield top, dirs, nondirs
+
+def walk_stat(top, topdown=True, onerror=None, followlinks=False, fields=None):
+    if fields is None:
+        fields = ['st_mode_type']
+    """Just like os.walk(), but faster, as it uses iterdir_stat internally."""
+    # Determine which are files and which are directories
+    dirs = []
+    dir_stats = []
+    nondirs = []
+    nondir_stats = []
+    try:
+        for name, st in iterdir_stat(top, fields=fields):
+            if stat.S_ISDIR(st.st_mode):
+                dirs.append(name)
+                dir_stats.append(st)
+            else:
+                nondirs.append(name)
+                nondir_stats.append(st)
+    except OSError as err:
+        if onerror is not None:
+            onerror(err)
+        return
+
+    # Yield before recursion if going top down
+    if topdown:
+        yield top, dirs, dir_stats, nondirs, nondir_stats
+
+    # Recurse into sub-directories, following symbolic links if "followlinks"
+    for name, st in zip(dirs, dir_stats):
+        new_path = os.path.join(top, name)
+        if followlinks or not stat.S_ISLNK(st.st_mode):
+            for x in walk_stat(new_path, topdown, onerror, followlinks, fields):
+                yield x
+
+    # Yield before recursion if going bottom up
+    if not topdown:
+        yield top, dirs, dir_stats, nondirs, nondir_stats

@@ -91,12 +91,27 @@ tree with a standardized size.
 The API
 -------
 
-### walk()
+### `walk()`
 
 The API for `betterwalk.walk()` is exactly the same as `os.walk()`, so just
 [read the Python docs](http://docs.python.org/2/library/os.html#os.walk).
 
-### iterdir_stat()
+### `walk_stat()`
+
+We're already `stat`'ing things, so why `stat` twice? Whereas `walk(path)`
+yields:
+
+    (top, dirs, nondirs)
+
+`walk_stat(path, fields=['st_mode'])` yields:
+
+    (top, dirs, dir_stats, nondirs, nondir_stats)
+
+`fields` defaults to `['st_mode_type']` if it is not specified. And at least
+on non-Windows OS's, anything besides `['st_mode_type']` makes it get a full
+`stat` anyway.
+
+### `iterdir_stat()`
 
 The `iterdir_stat()` function is BetterWalk's main workhorse. It's defined as
 follows:
